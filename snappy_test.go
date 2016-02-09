@@ -323,7 +323,8 @@ func downloadTestdata(b *testing.B, basename string) (errRet error) {
 			os.Remove(filename)
 		}
 	}()
-	// Generate random data
+
+	// Generate random data for Random benchmark
 	if basename == "random" {
 		rng := rand.New(rand.NewSource(27354294))
 		for i := 0; i < 1<<20; i++ {
@@ -376,7 +377,6 @@ func Benchmark_UFlat8(b *testing.B)  { benchFile(b, 8, true) }
 func Benchmark_UFlat9(b *testing.B)  { benchFile(b, 9, true) }
 func Benchmark_UFlat10(b *testing.B) { benchFile(b, 10, true) }
 func Benchmark_UFlat11(b *testing.B) { benchFile(b, 11, true) }
-func Benchmark_UFlat12(b *testing.B) { benchFile(b, 12, true) }
 func Benchmark_ZFlat0(b *testing.B)  { benchFile(b, 0, false) }
 func Benchmark_ZFlat1(b *testing.B)  { benchFile(b, 1, false) }
 func Benchmark_ZFlat2(b *testing.B)  { benchFile(b, 2, false) }
@@ -389,19 +389,26 @@ func Benchmark_ZFlat8(b *testing.B)  { benchFile(b, 8, false) }
 func Benchmark_ZFlat9(b *testing.B)  { benchFile(b, 9, false) }
 func Benchmark_ZFlat10(b *testing.B) { benchFile(b, 10, false) }
 func Benchmark_ZFlat11(b *testing.B) { benchFile(b, 11, false) }
-func Benchmark_ZFlat12(b *testing.B) { benchFile(b, 12, false) }
+
+func BenchmarkDecodeRandom(b *testing.B) { benchFile(b, 12, true) }
+func BenchmarkEncodeRandom(b *testing.B) { benchFile(b, 12, false) }
 
 // Prints compression size and ratio.
 func BenchmarkCompressionSize(b *testing.B) {
 	fmt.Println("\ndata\tinsize\toutsize\treduction")
-	for n := range testFiles {
-		if err := downloadTestdata(b, testFiles[n].filename); err != nil {
+	for _, tf := range testFiles {
+		if err := downloadTestdata(b, tf.filename); err != nil {
 			b.Fatalf("failed to download testdata: %s", err)
 		}
-		src := readFile(b, filepath.Join(*testdata, testFiles[n].filename))
-		dst := make([]byte, MaxEncodedLen(len(src)))
-		dst = Encode(dst, src)
-		fmt.Printf("%s\t%d\t%d\t%.2f%%\n", testFiles[n].label, len(src), len(dst), 100-float64(len(dst))/float64(len(src))*100)
+		src := readFile(b, filepath.Join(*testdata, tf.filename))
+		dst := Encode(nil, src)
+		fmt.Printf("%s\t%d\t%d\t%.2f%%\n", tf.label, len(src), len(dst), 100-float64(len(dst))/float64(len(src))*100)
 	}
+	// BenchmarkCompressionSize isn't really a benchmark, in the sense of "I
+	// want to run some code b.N times and see how long it takes". Instead, it
+	// prints out compressed sizes for the set of testFiles. Like the ns/op or
+	// MB/s metrics that the Benchmark_Z* benchmarks above give, this
+	// compression metric is also useful to know when tweaking the encoding
+	// algorithm, so this function is also run as a 'benchmark'.
 	b.Skip("ok")
 }

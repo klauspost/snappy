@@ -110,7 +110,6 @@ func Encode(dst, src []byte) []byte {
 		t   int // The last position with the same hash as s.
 		lit int // The start position of any pending literal bytes.
 	)
-
 	for s+3 < len(src) {
 		// Update the hash table.
 		b0, b1, b2, b3 := src[s], src[s+1], src[s+2], src[s+3]
